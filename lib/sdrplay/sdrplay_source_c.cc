@@ -238,7 +238,7 @@ int sdrplay_source_c::work( int noutput_items,
    {
       for (int i = _buf_offset; i < _dev->samplesPerPacket; i++)
       {
-         *out++ = gr_complex( float(_bufi[i]) * (1.0f/4096.0f), float(_bufq[i]) * (1.0f/4096.0f) );
+         *out++ = gr_complex( float(_bufi[i]) * (1.0f/32768.0f), float(_bufq[i]) * (1.0f/32768.0f) );
       }
       cnt -= (_dev->samplesPerPacket - _buf_offset);
    }
@@ -259,7 +259,7 @@ int sdrplay_source_c::work( int noutput_items,
       mir_sdr_ReadPacket(_bufi.data(), _bufq.data(), &sampNum, &grChanged, &rfChanged, &fsChanged);
       for (int i = 0; i < cnt; i++)
       {
-         *out++ = gr_complex( float(_bufi[i]) * (1.0f/4096.0f), float(_bufq[i]) * (1.0f/4096.0f) );
+         *out++ = gr_complex( float(_bufi[i]) * (1.0f/32768.0f), float(_bufq[i]) * (1.0f/32768.0f) );
       }
       _buf_offset = cnt;
    }
