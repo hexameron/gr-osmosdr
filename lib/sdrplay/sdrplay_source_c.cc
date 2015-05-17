@@ -63,7 +63,7 @@ struct sdrplay_dev
 using namespace boost::assign;
 
 #define BYTES_PER_SAMPLE  4 // sdrplay device delivers 16 bit signed IQ data
-                            // containing 12 bits of information
+                            // containing 12 bits of information left justified.
 
 #define SDRPLAY_AM_MIN     150e3
 #define SDRPLAY_AM_MAX      30e6
@@ -71,13 +71,17 @@ using namespace boost::assign;
 #define SDRPLAY_FM_MAX     108e6
 #define SDRPLAY_B3_MIN     162e6
 #define SDRPLAY_B3_MAX     240e6
+#define SDRPLAY_GAP_MIN    380e6
+#define SDRPLAY_GAP_MAX    420e6
 #define SDRPLAY_B45_MIN    470e6
 #define SDRPLAY_B45_MAX    960e6
 #define SDRPLAY_L_MIN     1450e6
 #define SDRPLAY_L_MAX     1675e6
+#define SDRPLAY_FREQ_MAX  1849e6
 
 #define SDRPLAY_MAX_BUF_SIZE 504
-
+#define SDRPLAY_SAMPLERATE_MIN 1536e3
+#define SDRPLAY_SAMPLERATE_MAX 2048e3
 /*
  * Create a new instance of sdrplay_source_c and return
  * a boost shared_ptr.  This is effectively the public constructor.
@@ -118,9 +122,9 @@ sdrplay_source_c::sdrplay_source_c (const std::string &args)
    {
       return;
 }
-   _dev->fsHz = 2048e3;
-   _dev->rfHz = 200e6;
-   _dev->bwType = mir_sdr_BW_1_536;
+   _dev->fsHz = SDRPLAY_SAMPLERATE_MIN;
+   _dev->rfHz = 434e6;
+   _dev->bwType = mir_sdr_BW_0_200;
    _dev->ifType = mir_sdr_IF_Zero;
    _dev->samplesPerPacket = 0;
    _dev->dcMode = 0;
@@ -202,11 +206,15 @@ void sdrplay_source_c::set_gain_limits(double freq)
       _dev->minGain = 9;
       _dev->maxGain = 94;
    }
-   else if (freq <= SDRPLAY_L_MAX)
+   else if (freq <= SDRPLAY_FREQ_MAX)
    {
       _dev->minGain = 24;
       _dev->maxGain = 105;
    }
+   else {
+      _dev->minGain = 24;
+      _dev->maxGain = 94;
+  }
 }
 
 int sdrplay_source_c::work( int noutput_items,
@@ -274,7 +282,7 @@ std::vector<std::string> sdrplay_source_c::get_devices()
 
    unsigned int dev_cnt = 0;
    int samplesPerPacket;
-   while(mir_sdr_Init(60, 2.048, 200.0, mir_sdr_BW_1_536, mir_sdr_IF_Zero, &samplesPerPacket) == mir_sdr_Success)
+   if (mir_sdr_Init(60, SDRPLAY_SAMPLERATE_MIN / 1e6, 300.0, mir_sdr_BW_0_200, mir_sdr_IF_Zero, &samplesPerPacket) == mir_sdr_Success)
    {
       dev_cnt++;
    }
@@ -304,8 +312,15 @@ osmosdr::meta_range_t sdrplay_source_c::get_sample_rates()
 {
    osmosdr::meta_range_t range;
 
-   range += osmosdr::range_t( 2000e3, 12000e3 ); 
-
+   range += osmosdr::range_t( SDRPLAY_SAMPLERATE_MIN, SDRPLAY_SAMPLERATE_MAX );
+#if 0
+   range += osmosdr::range_t( 768000 );
+   range += osmosdr::range_t( 1024000 );
+   range += osmosdr::range_t( 1536000 );
+   range += osmosdr::range_t( 2048000 ); // known to work
+   range += osmosdr::range_t( 3072000 );
+   range += osmosdr::range_t( 4096000 );
+#endif
    return range;
 }
 
@@ -350,11 +365,8 @@ osmosdr::freq_range_t sdrplay_source_c::get_freq_range( size_t chan )
 {
    osmosdr::freq_range_t range;
 
-   range += osmosdr::range_t( SDRPLAY_AM_MIN,  SDRPLAY_AM_MAX ); /* LW/MW/SW (150 kHz - 30 MHz) */
-   range += osmosdr::range_t( SDRPLAY_FM_MIN,  SDRPLAY_FM_MAX ); /* VHF Band II (64 - 108 MHz) */
-   range += osmosdr::range_t( SDRPLAY_B3_MIN,  SDRPLAY_B3_MAX ); /* Band III (162 - 240 MHz) */
-   range += osmosdr::range_t( SDRPLAY_B45_MIN, SDRPLAY_B45_MAX ); /* Band IV/V (470 - 960 MHz) */
-   range += osmosdr::range_t( SDRPLAY_L_MIN,   SDRPLAY_L_MAX ); /* L-Band (1450 - 1675 MHz) */
+   range += osmosdr::range_t( SDRPLAY_AM_MIN,  SDRPLAY_GAP_MIN );
+   range += osmosdr::range_t( SDRPLAY_GAP_MAX,   SDRPLAY_FREQ_MAX );
 
    return range;
 }
