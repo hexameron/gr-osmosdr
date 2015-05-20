@@ -44,6 +44,7 @@ namespace gr {
 
     prefs *p = prefs::singleton();
     size_t max_nmsgs = static_cast<size_t>(p->get_long("DEFAULT", "max_messages", 100));
+    max_nmsgs += 0; // warning : unused 
 
     // Set thread affinity if it was set before fg was started.
     if(block->processor_affinity().size() > 0) {
