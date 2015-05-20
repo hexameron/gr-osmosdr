@@ -305,7 +305,8 @@ osmosdr::meta_range_t sdrplay_source_c::get_sample_rates()
 {
    osmosdr::meta_range_t range;
 
-   range += osmosdr::range_t( 2000e3, 12000e3 ); 
+   range += osmosdr::range_t( 1536e3, 2560e3, 512e3 );
+   range += osmosdr::range_t( 4000e3, 12000e3, 2000e3 );
 
    return range;
 }
