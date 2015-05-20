@@ -80,8 +80,8 @@ using namespace boost::assign;
 #define SDRPLAY_FREQ_MAX  1849e6
 
 #define SDRPLAY_MAX_BUF_SIZE 504
-#define SDRPLAY_SAMPLERATE_MIN 1536e3
-#define SDRPLAY_SAMPLERATE_MAX 2048e3
+#define SDRPLAY_SAMPLERATE_MIN 1024e3
+
 /*
  * Create a new instance of sdrplay_source_c and return
  * a boost shared_ptr.  This is effectively the public constructor.
@@ -312,7 +312,7 @@ osmosdr::meta_range_t sdrplay_source_c::get_sample_rates()
 {
    osmosdr::meta_range_t range;
 
-   range += osmosdr::range_t( 512e3, 2560e3, 512e3 );
+   range += osmosdr::range_t( 1024e3, 2560e3, 512e3 );
    range += osmosdr::range_t( 4e6, 10e6, 2e6 );
 
    return range;
