@@ -446,6 +446,7 @@ bool sdrplay_source_c::set_gain_mode( bool automatic, size_t chan )
    if (automatic)
    {
       /* Start AGC */
+      std::cerr << "AGC not yet implemented" << std::endl;
    }
 
    std::cerr << "set_gain_mode end" << std::endl;
@@ -577,7 +578,17 @@ double sdrplay_source_c::set_bandwidth( double bandwidth, size_t chan )
 
 double sdrplay_source_c::get_bandwidth( size_t chan )
 {
-   return (double)_dev->bwType * 1000.0;
+   double tmpbw=0.0f;
+   if      (_dev->bwType == mir_sdr_BW_0_200) tmpbw =  200e3;
+   else if (_dev->bwType == mir_sdr_BW_0_300) tmpbw =  300e3;
+   else if (_dev->bwType == mir_sdr_BW_0_600) tmpbw =  600e3;
+   else if (_dev->bwType == mir_sdr_BW_1_536) tmpbw = 1536e3;
+   else if (_dev->bwType == mir_sdr_BW_5_000) tmpbw = 5000e3;
+   else if (_dev->bwType == mir_sdr_BW_6_000) tmpbw = 6000e3;
+   else if (_dev->bwType == mir_sdr_BW_7_000) tmpbw = 7000e3;
+   else                                       tmpbw = 8000e3;
+   
+   return (double)tmpbw;
 }
 
 osmosdr::freq_range_t sdrplay_source_c::get_bandwidth_range( size_t chan )
