@@ -163,11 +163,8 @@ void sdrplay_source_c::reinit_device()
    std::cerr << "reinit_device started" << std::endl;
    _buf_mutex.lock();
    std::cerr << "after mutex.lock" << std::endl;
-   if (_running)
-   {
-      std::cerr << "mir_sdr_Uninit started" << std::endl;
-      mir_sdr_Uninit();
-   }
+   std::cerr << "mir_sdr_Uninit started" << std::endl;
+   mir_sdr_Uninit();
 
    std::cerr << "mir_sdr_Init started" << std::endl;
    mir_sdr_Init(_dev->gRdB, _dev->fsHz / 1e6, _dev->rfHz / 1e6, _dev->bwType, _dev->ifType, &_dev->samplesPerPacket);
@@ -278,19 +275,23 @@ std::vector<std::string> sdrplay_source_c::get_devices()
 {
    std::vector<std::string> devices;
    std::cerr << "get_devices started" << std::endl;
-
+   mir_sdr_ErrT retcode;
    unsigned int dev_cnt = 0;
    int samplesPerPacket;
-   if (mir_sdr_Init(60, SDRPLAY_SAMPLERATE_MIN / 1e6, 300.0, mir_sdr_BW_0_600, mir_sdr_IF_Zero, &samplesPerPacket) == mir_sdr_Success)
+
+   retcode = mir_sdr_Init(60, SDRPLAY_SAMPLERATE_MIN / 1e6, 300.0, mir_sdr_BW_0_600, mir_sdr_IF_Zero, &samplesPerPacket);
+   if (retcode == mir_sdr_Success)
+   {
+      dev_cnt++;
+      // mir_sdr_Uninit();
+   }
+   if (retcode == mir_sdr_AlreadyInitialised)
    {
       dev_cnt++;
    }
 
-   std::cerr << "Device count: " << dev_cnt << std::endl;
-
    for (unsigned int i = 0; i < dev_cnt; i++) 
    {
-      mir_sdr_Uninit();
       std::string args = "sdrplay=" + boost::lexical_cast< std::string >( i );
       args += ",label='" + std::string("SDRplay RSP") + "'";
       std::cerr << args << std::endl;
