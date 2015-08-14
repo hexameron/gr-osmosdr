@@ -40,74 +40,167 @@ GR_OSMOSDR_APPEND_SRCS(
     sink_impl.cc
     ranges.cc
     device.cc
-    time_spec.cc
 )
 
 GR_OSMOSDR_APPEND_LIBS(
     ${Boost_LIBRARIES}
-    ${GNURADIO_ALL_LIBRARIES}
+    ${GNURADIO_RUNTIME_LIBRARIES}
+    ${GNURADIO_PMT_LIBRARIES}
+    ${GNURADIO_BLOCKS_LIBRARIES}
 )
 
 ########################################################################
-# Setup defines for high resolution timing
+# Set up built-in GNU Radio runtime component
 ########################################################################
-MESSAGE(STATUS "")
-MESSAGE(STATUS "Configuring high resolution timing...")
-INCLUDE(CheckCXXSourceCompiles)
+GR_REGISTER_COMPONENT("Built-in GNU Radio runtime" ENABLE_RUNTIME RUNTIME_MODE)
+if(ENABLE_RUNTIME)
 
-SET(CMAKE_REQUIRED_LIBRARIES -lrt)
-CHECK_CXX_SOURCE_COMPILES("
-    #include <ctime>
-    int main(){
-        timespec ts;
-        return clock_gettime(CLOCK_MONOTONIC, &ts);
-    }
-    " HAVE_CLOCK_GETTIME
+message(STATUS "")
+INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/ConfigChecks.cmake)
+
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/runtime)
+
+GR_OSMOSDR_APPEND_SRCS(
+    runtime/math/fast_atan2f.cc
+    runtime/math/fxpt.cc
+    runtime/math/random.cc
+    runtime/math/sincos.cc
+
+    runtime/thread/thread.cc
+    runtime/thread/thread_body_wrapper.cc
+    runtime/thread/thread_group.cc
+
+    runtime/basic_block.cc
+    runtime/block.cc
+    runtime/block_detail.cc
+    runtime/block_executor.cc
+    runtime/block_gateway_impl.cc
+    runtime/block_registry.cc
+    runtime/buffer.cc
+    runtime/circular_file.cc
+    runtime/feval.cc
+    runtime/flat_flowgraph.cc
+    runtime/flowgraph.cc
+    runtime/hier_block2.cc
+    runtime/hier_block2_detail.cc
+    runtime/high_res_timer.cc
+    runtime/io_signature.cc
+    runtime/local_sighandler.cc
+    runtime/logger.cc
+    runtime/misc.cc
+    runtime/pagesize.cc
+    runtime/prefs.cc
+    runtime/realtime.cc
+    runtime/realtime_impl.cc
+    runtime/scheduler.cc
+    runtime/scheduler_sts.cc
+    runtime/scheduler_tpb.cc
+    runtime/single_threaded_scheduler.cc
+    runtime/sptr_magic.cc
+    runtime/sync_block.cc
+    runtime/sys_paths.cc
+    runtime/top_block.cc
+    runtime/top_block_impl.cc
+    runtime/tpb_detail.cc
+    runtime/tpb_thread_body.cc
+    runtime/vmcircbuf.cc
+    runtime/vmcircbuf_createfilemapping.cc
+    runtime/vmcircbuf_mmap_shm_open.cc
+    runtime/vmcircbuf_mmap_tmpfile.cc
+    runtime/vmcircbuf_prefs.cc
+    runtime/vmcircbuf_sysv_shm.cc
 )
-UNSET(CMAKE_REQUIRED_LIBRARIES)
 
-INCLUDE(CheckCXXSourceCompiles)
-CHECK_CXX_SOURCE_COMPILES("
-    #include <mach/mach_time.h>
-    int main(){
-        mach_timebase_info_data_t info;
-        mach_timebase_info(&info);
-        mach_absolute_time();
-        return 0;
-    }
-    " HAVE_MACH_ABSOLUTE_TIME
+ADD_DEFINITIONS(-Dgnuradio_runtime_EXPORTS)
+
+GR_OSMOSDR_APPEND_SRCS(
+    runtime/blocks/file_source_impl.cc
+    runtime/blocks/throttle_impl.cc
+    runtime/blocks/null_sink_impl.cc
+    runtime/blocks/null_source_impl.cc
 )
 
-CHECK_CXX_SOURCE_COMPILES("
-    #include <Windows.h>
-    int main(){
-        LARGE_INTEGER value;
-        QueryPerformanceCounter(&value);
-        QueryPerformanceFrequency(&value);
-        return 0;
-    }
-    " HAVE_QUERY_PERFORMANCE_COUNTER
+set(GNURADIO_BLOCKS_FOUND TRUE)
+ADD_DEFINITIONS(-Dgnuradio_blocks_EXPORTS)
+
+if(UHD_FOUND)
+
+GR_OSMOSDR_APPEND_SRCS(
+    runtime/uhd/usrp_sink_impl.cc
+    runtime/uhd/usrp_source_impl.cc
 )
 
-IF(HAVE_CLOCK_GETTIME)
-    MESSAGE(STATUS "  High resolution timing supported through clock_gettime.")
-    SET(TIME_SPEC_DEFS HAVE_CLOCK_GETTIME)
-    GR_OSMOSDR_APPEND_LIBS("-lrt")
-ELSEIF(HAVE_MACH_ABSOLUTE_TIME)
-    MESSAGE(STATUS "  High resolution timing supported through mach_absolute_time.")
-    SET(TIME_SPEC_DEFS HAVE_MACH_ABSOLUTE_TIME)
-ELSEIF(HAVE_QUERY_PERFORMANCE_COUNTER)
-    MESSAGE(STATUS "  High resolution timing supported through QueryPerformanceCounter.")
-    SET(TIME_SPEC_DEFS HAVE_QUERY_PERFORMANCE_COUNTER)
-ELSE()
-    MESSAGE(STATUS "  High resolution timing supported through microsec_clock.")
-    SET(TIME_SPEC_DEFS HAVE_MICROSEC_CLOCK)
-ENDIF()
+set(GNURADIO_UHD_FOUND TRUE)
+ADD_DEFINITIONS(-Dgnuradio_uhd_EXPORTS)
 
-SET_SOURCE_FILES_PROPERTIES(
-    time_spec.cc
-    PROPERTIES COMPILE_DEFINITIONS "${TIME_SPEC_DEFS}"
-)
+endif(UHD_FOUND)
+
+########################################################################
+# Handle the generated constants
+########################################################################
+MACRO (TODAY RESULT)
+    IF (WIN32)
+        EXECUTE_PROCESS(COMMAND "date" "/T" OUTPUT_VARIABLE ${RESULT})
+        string(REGEX REPLACE "(..)/(..)/(....).*" "\\1.\\2.\\3"
+${RESULT} ${${RESULT}})
+    ELSEIF(UNIX)
+        EXECUTE_PROCESS(COMMAND "date" "+%d/%m/%Y" OUTPUT_VARIABLE ${RESULT})
+        string(REGEX REPLACE "(..)/(..)/(....).*" "\\1.\\2.\\3"
+${RESULT} ${${RESULT}})
+    ELSE (WIN32)
+        MESSAGE(SEND_ERROR "date not implemented")
+        SET(${RESULT} 00.00.0000)
+    ENDIF (WIN32)
+ENDMACRO (TODAY)
+
+TODAY(BUILD_DATE)
+
+set(GR_VERSION "built-in")
+
+message(STATUS "Loading prefix ${prefix} into constants...")
+message(STATUS "Loading SYSCONFDIR ${SYSCONFDIR} into constants...")
+message(STATUS "Loading GR_PREFSDIR ${GR_PREFSDIR} into constants...")
+message(STATUS "Loading build date \"${BUILD_DATE}\" into constants...")
+message(STATUS "Loading version \"${GR_VERSION}\" into constants...")
+
+#double escape for windows backslash path separators
+string(REPLACE "\\" "\\\\" prefix ${prefix})
+string(REPLACE "\\" "\\\\" SYSCONFDIR ${SYSCONFDIR})
+string(REPLACE "\\" "\\\\" GR_PREFSDIR ${GR_PREFSDIR})
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/runtime/constants.cc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/constants.cc
+@ONLY)
+
+GR_OSMOSDR_APPEND_SRCS(${CMAKE_CURRENT_BINARY_DIR}/constants.cc)
+
+# PowerPC workaround for posix_memalign
+# Might not be needed, but we'll keep it for now.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
+    GR_OSMOSDR_APPEND_SRCS(runtime/posix_memalign.cc)
+endif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(powerpc|ppc)")
+
+########################################################################
+# Will set TRY_SHM_VMCIRCBUF to 1 by default except on Windows machines.
+# Can manually set with -DTRY_SHM_VMCIRCBUF=0|1
+########################################################################
+OPTION(TRY_SHM_VMCIRCBUF "Try SHM VMCIRCBUF" ON)
+
+message(STATUS "TRY_SHM_VMCIRCBUF set to ${TRY_SHM_VMCIRCBUF}.")
+
+if(TRY_SHM_VMCIRCBUF)
+    ADD_DEFINITIONS( -DTRY_SHM_VMCIRCBUF )
+endif(TRY_SHM_VMCIRCBUF)
+
+########################################################################
+# Need to link with librt for shm_*
+########################################################################
+if(LINUX)
+    GR_OSMOSDR_APPEND_LIBS(rt)
+endif()
+
+endif(ENABLE_RUNTIME)
 
 ########################################################################
 # Setup IQBalance component
@@ -161,7 +254,7 @@ endif(ENABLE_RTL)
 ########################################################################
 # Setup RTL_TCP component
 ########################################################################
-GR_REGISTER_COMPONENT("RTLSDR TCP Client" ENABLE_RTL_TCP GNURADIO_BLOCKS_FOUND)
+GR_REGISTER_COMPONENT("RTLSDR TCP Client" ENABLE_RTL_TCP)
 if(ENABLE_RTL_TCP)
 GR_INCLUDE_SUBDIRECTORY(rtl_tcp)
 endif(ENABLE_RTL_TCP)
@@ -185,12 +278,10 @@ endif(ENABLE_MIRI)
 ########################################################################
 # Setup SDRplay component
 ########################################################################
-if(ENABLE_NONFREE)
 GR_REGISTER_COMPONENT("SDRplay RSP (NONFREE)" ENABLE_SDRPLAY LIBSDRPLAY_FOUND)
 if(ENABLE_SDRPLAY)
 GR_INCLUDE_SUBDIRECTORY(sdrplay)
 endif(ENABLE_SDRPLAY)
-endif(ENABLE_NONFREE)
 
 ########################################################################
 # Setup HackRF component
