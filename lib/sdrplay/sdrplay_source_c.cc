@@ -152,6 +152,7 @@ sdrplay_source_c::~sdrplay_source_c ()
    _buf_mutex.lock();
    if (_running)
    {
+      mir_sdr_Uninit();
       _running = false;
    }
    _uninit = true;
@@ -283,7 +284,7 @@ std::vector<std::string> sdrplay_source_c::get_devices()
    if (retcode == mir_sdr_Success)
    {
       dev_cnt++;
-      // mir_sdr_Uninit();
+      mir_sdr_Uninit();
    }
    if (retcode == mir_sdr_AlreadyInitialised)
    {
