@@ -80,6 +80,7 @@ using namespace boost::assign;
 #define SDRPLAY_MAX_BUF_SIZE 504
 #define SDRPLAY_FREQ_MAX  1849e6
 #define SDRPLAY_SAMPLERATE_MIN 1024e3
+#define SDRPLAY_SCALE (1.0f/32768)
 
 /*
  * Create a new instance of sdrplay_source_c and return
@@ -239,7 +240,7 @@ int sdrplay_source_c::work( int noutput_items,
    {
       for (int i = _buf_offset; i < _dev->samplesPerPacket; i++)
       {
-         *out++ = gr_complex( float(_bufi[i]) * (1.0f/2048.0f), float(_bufq[i]) * (1.0f/2048.0f) );
+         *out++ = gr_complex( float(_bufi[i]) * SDRPLAY_SCALE, float(_bufq[i]) * SDRPLAY_SCALE );
       }
       cnt -= (_dev->samplesPerPacket - _buf_offset);
    }
@@ -249,7 +250,7 @@ int sdrplay_source_c::work( int noutput_items,
       mir_sdr_ReadPacket(_bufi.data(), _bufq.data(), &sampNum, &grChanged, &rfChanged, &fsChanged);
       for (int i = 0; i < _dev->samplesPerPacket; i++)
       {
-         *out++ = gr_complex( float(_bufi[i]) * (1.0f/2048.0f), float(_bufq[i]) * (1.0f/2048.0f) );
+         *out++ = gr_complex( float(_bufi[i]) * SDRPLAY_SCALE, float(_bufq[i]) * SDRPLAY_SCALE );
       }
       cnt -= _dev->samplesPerPacket;
    }
@@ -260,7 +261,7 @@ int sdrplay_source_c::work( int noutput_items,
       mir_sdr_ReadPacket(_bufi.data(), _bufq.data(), &sampNum, &grChanged, &rfChanged, &fsChanged);
       for (int i = 0; i < cnt; i++)
       {
-         *out++ = gr_complex( float(_bufi[i]) * (1.0f/2048.0f), float(_bufq[i]) * (1.0f/2048.0f) );
+         *out++ = gr_complex( float(_bufi[i]) * SDRPLAY_SCALE, float(_bufq[i]) * SDRPLAY_SCALE );
       }
       _buf_offset = cnt;
    }
