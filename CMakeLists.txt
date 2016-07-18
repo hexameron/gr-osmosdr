@@ -171,7 +171,7 @@ file(TO_NATIVE_PATH "${GR_PREFSDIR}"                    GR_PREFSDIR)
 # Find build dependencies
 ########################################################################
 set(GR_REQUIRED_COMPONENTS RUNTIME PMT BLOCKS)
-find_package(Gnuradio "3.7.3")
+find_package(Gnuradio "3.7.8")
 find_package(GnuradioIQBalance)
 find_package(UHD)
 find_package(GnuradioUHD)

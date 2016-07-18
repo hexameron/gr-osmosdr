@@ -25,14 +25,14 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set(file_srcs
-    ${CMAKE_CURRENT_SOURCE_DIR}/file_source_c.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/file_sink_c.cc
+set(redpitaya_srcs
+    ${CMAKE_CURRENT_SOURCE_DIR}/redpitaya_source_c.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/redpitaya_sink_c.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/redpitaya_common.cc
 )
 
 ########################################################################
 # Append gnuradio-osmosdr library sources
 ########################################################################
-list(APPEND gr_osmosdr_srcs ${file_srcs})
+list(APPEND gr_osmosdr_srcs ${redpitaya_srcs})
 #list(APPEND gr_osmosdr_libs ${GNURADIO_BLOCKS_LIBRARIES})
-
